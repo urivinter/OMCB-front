@@ -11,6 +11,7 @@ for (let i = 0; i < 16; i++) {
     boxes.push(box);
 }
 
+
 // Fetch initial state
 fetch('http://localhost:8000/api/boxes/')
     .then(response => response.arrayBuffer())
@@ -20,7 +21,7 @@ fetch('http://localhost:8000/api/boxes/')
             for (let j = 0; j < 8; j++) {
                 const offset = i * 8 + j;
                 if (offset < 16) {
-                    const isChecked = (view[i] >> j) & 1;
+                    const isChecked = view[i] & (1 << (7 - j));
                     if (isChecked) {
                         boxes[offset].classList.add('checked');
                     }
