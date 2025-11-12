@@ -32,10 +32,10 @@ fetch('http://localhost:8000/api/boxes/')
 
 // WebSocket connection
 const socket = new WebSocket('ws://localhost:8000/ws');
+socket.binaryType = 'arraybuffer';
 
 socket.onmessage = (event) => {
-    const data = JSON.parse(event.data);
-    const { offset, value } = data;
+    const { offset, value } = decode(event.data);
     const box = boxes[offset];
     if (value) {
         box.classList.add('checked');
@@ -51,10 +51,26 @@ gridContainer.addEventListener('click', (event) => {
             const box = event.target;
             const offset = parseInt(box.dataset.offset);
             const value = !box.classList.contains('checked');
-            const data = { offset, value };
-            socket.send(JSON.stringify(data));
+            const data = encode(offset, value);
+            socket.send(data.buffer);
         } else {
             console.error('WebSocket is not open. readyState: ' + socket.readyState);
         }
     }
 });
+
+// Fixed 3 bytes payload
+function encode(offset, value) {
+  return new Uint8Array([
+    offset & 0xFF,
+    (offset >> 8) & 0xFF,
+    ((offset >> 16) & 0x0F) | (value << 4)
+  ]);
+}
+
+function decode(buffer) {
+  const view = new Uint8Array(buffer);
+  const offset = view[0] | (view[1] << 8) | ((view[2] & 0x0F) << 16);
+  const value = (view[2] & 0x10) !== 0;
+  return { offset, value };
+}
